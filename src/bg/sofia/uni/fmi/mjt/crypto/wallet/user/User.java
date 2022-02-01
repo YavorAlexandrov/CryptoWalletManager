@@ -1,5 +1,7 @@
 package bg.sofia.uni.fmi.mjt.crypto.wallet.user;
 
+import com.google.gson.Gson;
+
 public class User {
     private String name;
     private String password;
@@ -11,5 +13,8 @@ public class User {
         this.wallet = wallet;
     }
 
+    public User of(String line, Gson gson) {
+        return gson.fromJson(line, User.class);
+    }
 
 }
