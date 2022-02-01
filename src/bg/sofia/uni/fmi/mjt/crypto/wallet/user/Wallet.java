@@ -50,4 +50,14 @@ public class Wallet {
     public double getWalletSummary() {
         return walletSummary;
     }
+
+
+    @Override
+    public String toString() {
+        return "Wallet{" +
+                "currentMoneyAmount=" + currentMoneyAmount +
+                ", assets=" + assets +
+                ", walletSummary=" + walletSummary +
+                '}';
+    }
 }

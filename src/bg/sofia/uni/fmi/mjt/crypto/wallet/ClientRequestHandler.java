@@ -15,6 +15,8 @@ public class ClientRequestHandler implements Runnable {
     private Socket socket;
     private Storage storage;
 
+    private boolean isLogged = false;
+
     private static final String API_KEY = "CB64230A-73AA-46F4-9314-E95047562BE8";
 
     private static final String API_ENDPOINT_SCHEME = "http";
@@ -28,6 +30,11 @@ public class ClientRequestHandler implements Runnable {
         this.socket = socket;
         this.storage = usersStorage;
     }
+
+    public boolean register(String name, String password) {
+        return false;
+    }
+
 
 
     @Override

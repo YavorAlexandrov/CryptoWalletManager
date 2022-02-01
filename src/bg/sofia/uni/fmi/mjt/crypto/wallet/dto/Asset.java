@@ -11,15 +11,19 @@ public class Asset {
     private final String name;
     @SerializedName("price_usd")
     private final double price;
-    private final LocalDateTime purchaseDate;
+    private LocalDateTime purchaseDate;
     private LocalDateTime soldDate;
 
 
-    public Asset(String assetId, String name, double price) {
+    public Asset(String assetId, String name, double price, LocalDateTime purchaseDate) {
         this.assetId = assetId;
         this.name = name;
         this.price = price;
-        this.purchaseDate = LocalDateTime.now();
+        setPurchaseDate(purchaseDate);
+    }
+
+    public Asset(String assetId, String name, double price) {
+        this(assetId, name, price, LocalDateTime.now());
     }
 
     public String getAssetId() {
@@ -40,6 +44,16 @@ public class Asset {
                 "assetId='" + assetId + '\'' +
                 ", name='" + name + '\'' +
                 ", price=" + price +
+                ", purchaseDate=" + purchaseDate +
+                ", soldDate=" + soldDate +
                 '}';
+    }
+
+    public void setPurchaseDate(LocalDateTime purchaseDate) {
+        this.purchaseDate = purchaseDate;
+    }
+
+    public void setSoldDate(LocalDateTime soldDate) {
+        this.soldDate = soldDate;
     }
 }
