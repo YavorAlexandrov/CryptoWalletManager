@@ -48,6 +48,10 @@ public class Wallet {
         quotes.add(quote);
     }
 
+    public void removeQuotes(Set<Quote> toRemove) {
+        this.quotes.removeAll(toRemove);
+    }
+
     public Collection<Quote> getQuotes() {
         return Collections.unmodifiableCollection(quotes);
     }

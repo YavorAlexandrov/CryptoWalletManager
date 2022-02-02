@@ -42,9 +42,11 @@ public class DaemonCacheUpdater extends Thread {
                 }
             }).create();
 
-    private final int MAX_RESULTS_AMOUNT = 10;
+    private final int MAX_RESULTS_AMOUNT = 20;
+    private final int WAIT_TIME_TO_UPDATE = 300_000;
 
     private final HttpClient cryptoHttpClient = HttpClient.newBuilder().build();
+
 
     public DaemonCacheUpdater(Cache cache) {
         this.cache = cache;
@@ -68,7 +70,7 @@ public class DaemonCacheUpdater extends Thread {
             Set<Asset> assets = GSON.fromJson(response.body(), type);
             assets = assets.stream()
                     .filter(asset -> asset.getIsCrypto() == 1)
-                    .limit(MAX_RESULTS_AMOUNT).collect(Collectors.toUnmodifiableSet());
+                    .limit(MAX_RESULTS_AMOUNT).collect(Collectors.toSet());
 
             synchronized (cache) {
                 cache.update(assets);
@@ -83,12 +85,13 @@ public class DaemonCacheUpdater extends Thread {
 
                 try {
                     updateCache();
+                    //TODO log update
                 } catch (CryptoHttpClientException e) {
                     //TODO log error
                 }
-                Thread.sleep(1_800_000);
+                Thread.sleep(WAIT_TIME_TO_UPDATE);
             } catch (InterruptedException e) {
-                throw new IllegalStateException("The thread was interupted", e);
+                throw new IllegalStateException("The thread was interrupted", e);
             }
         }
     }

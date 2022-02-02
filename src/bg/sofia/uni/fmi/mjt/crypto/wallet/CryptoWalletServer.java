@@ -7,7 +7,6 @@ import bg.sofia.uni.fmi.mjt.crypto.wallet.storage.UsersStorage;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashSet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 

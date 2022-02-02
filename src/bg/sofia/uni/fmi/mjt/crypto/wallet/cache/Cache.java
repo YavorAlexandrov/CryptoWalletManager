@@ -19,11 +19,15 @@ public class Cache {
 
     public void update(Set<Asset> updates) {
         cachedAssets.clear();
-        cachedAssets = updates;
+        cachedAssets.addAll(updates);
         lastUpdated = LocalDateTime.now();
     }
 
     public Collection<Asset> getCachedAssets() {
         return Collections.unmodifiableCollection(cachedAssets);
+    }
+
+    public LocalDateTime getLastUpdated() {
+        return lastUpdated;
     }
 }

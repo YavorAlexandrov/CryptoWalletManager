@@ -14,6 +14,7 @@ import com.google.gson.reflect.TypeToken;
 
 import java.io.*;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URI;
@@ -61,7 +62,7 @@ public class ClientRequestHandler implements Runnable {
                 }
             }).create();
 
-    private final int MAX_RESULTS_AMOUNT = 10;
+    private final int MAX_RESULTS_AMOUNT = 20;
 
     private final HttpClient cryptoHttpClient = HttpClient.newBuilder().build();
 
@@ -216,9 +217,10 @@ public class ClientRequestHandler implements Runnable {
             return;
         }
 
-        if (!assetsCache.getCachedAssets().isEmpty()) {
+        if (LocalDateTime.now().minusMinutes(30).isBefore(assetsCache.getLastUpdated())) {
             assetsCache.getCachedAssets().stream()
                     .forEach(asset -> writer.print(asset.formattedToString()));
+
             writer.println("");
             writer.flush();
             return;
@@ -228,7 +230,7 @@ public class ClientRequestHandler implements Runnable {
     }
 
     private Asset checkCache(String assetID) {
-        Optional<Asset> optAsset = assetsCache.getCachedAssets().stream().filter(asset -> asset.getAssetId().equals(assetID)).limit(1).findFirst();
+        Optional<Asset> optAsset = assetsCache.getCachedAssets().stream().filter(asset -> asset.getAssetId().equals(assetID)).findFirst();
         if (!optAsset.isEmpty()) {
             return optAsset.get();
         } else {
@@ -237,7 +239,8 @@ public class ClientRequestHandler implements Runnable {
     }
 
     private void buyAsset(double money, Asset asset, PrintWriter writer) {
-        Quote quote = new Quote(money, asset);
+        double amountBought = money / asset.getPrice().doubleValue();
+        Quote quote = new Quote(amountBought, asset);
         try {
             activeUser.getWallet().withdraw(money);
         } catch (InsufficientFundsException e) {
@@ -249,28 +252,7 @@ public class ClientRequestHandler implements Runnable {
         return;
     }
 
-    private void buy(double money, String assetID, PrintWriter writer) throws CryptoHttpClientException {
-        if (!isLogged) {
-            writer.println("No account logged in currently.");
-            writer.flush();
-            return;
-        }
-        if (assetID == null) {
-            throw new IllegalArgumentException("assetID is null");
-        }
-
-        if (money > activeUser.getWallet().getCurrentMoneyAmount()) {
-            writer.println("Insufficient funds! Unsuccessful purchase.");
-            writer.flush();
-            return;
-        }
-        Asset cachedAsset = checkCache(assetID);
-        if (cachedAsset!=null) {
-            buyAsset(money, cachedAsset, writer);
-            return;
-        }
-
-
+    private void buyWithRequest(double money, String assetID, PrintWriter writer) throws CryptoHttpClientException {
         HttpResponse<String> response = null;
 
         try {
@@ -297,6 +279,96 @@ public class ClientRequestHandler implements Runnable {
         throw new CryptoHttpClientException("Unexpected response code from the crypto service");
     }
 
+    private void buy(double money, String assetID, PrintWriter writer) throws CryptoHttpClientException {
+        if (!isLogged) {
+            writer.println("No account logged in currently.");
+            writer.flush();
+            return;
+        }
+        if (assetID == null || assetID.equals("")) {
+            throw new IllegalArgumentException("assetID is null or empty");
+        }
+
+        if (money > activeUser.getWallet().getCurrentMoneyAmount()) {
+            writer.println("Insufficient funds! Unsuccessful purchase.");
+            writer.flush();
+            return;
+        }
+        Asset cachedAsset = checkCache(assetID);
+        if (cachedAsset!=null) {
+            buyAsset(money, cachedAsset, writer);
+            return;
+        }
+
+        buyWithRequest(money, assetID, writer);
+    }
+
+    private void sellAssets(String assetID, Asset cachedAsset, PrintWriter writer) {
+        Set<Quote> toSell = activeUser.getWallet().getQuotes().stream()
+                .filter(quote->quote.getAsset().getAssetId().equals(assetID))
+                .collect(Collectors.toSet());
+
+        toSell.stream()
+                .forEach(quote->activeUser
+                        .getWallet()
+                        .deposit(cachedAsset.getPrice()
+                                .multiply(new BigDecimal(quote.getAmount()))
+                                .doubleValue()));
+
+        activeUser.getWallet().removeQuotes(toSell);
+        writer.println("Quotes for " + assetID + " sold successfully.");
+        writer.flush();
+        return;
+    }
+
+    private void sellWithRequest(String assetID, PrintWriter writer) throws CryptoHttpClientException {
+        HttpResponse<String> response = null;
+
+        try {
+            URI uri = new URI(API_ENDPOINT_SCHEME,
+                    API_ENDPOINT_HOST,
+                    API_ENDPOINT_PATH + API_ENDPOINT_ASSET_ID_PATH.formatted(assetID),
+                    API_ENDPOINT_QUERY.formatted(API_KEY), null);
+            HttpRequest request = HttpRequest.newBuilder().uri(uri).build();
+
+            response = cryptoHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            throw new CryptoHttpClientException("a problem occurred while retrieving the data", e);
+        }
+
+        if (response.statusCode() == HttpURLConnection.HTTP_OK) {
+            Asset asset = GSON.fromJson(response.body().toString(), Asset.class);
+
+            sellAssets(assetID, asset, writer);
+            return;
+        }
+
+        //TODO api errors
+
+        throw new CryptoHttpClientException("Unexpected response code from the crypto service");
+    }
+
+    private void sell(String assetID, PrintWriter writer) throws CryptoHttpClientException {
+        if (!isLogged) {
+            writer.println("No account logged in currently.");
+            writer.flush();
+            return;
+        }
+        if (assetID == null || assetID.equals("")) {
+            throw new IllegalArgumentException("assetID is null or empty");
+        }
+
+        Asset cachedAsset = checkCache(assetID);
+        if (cachedAsset != null) {
+            sellAssets(assetID, cachedAsset, writer);
+            return;
+        }
+
+        sellWithRequest(assetID, writer);
+
+    }
+
+
     @Override
     public void run() {
         try (PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
@@ -308,7 +380,7 @@ public class ClientRequestHandler implements Runnable {
 
                 String[] words = inputLine.split(" ");
                 switch (words[0]) {
-                    case "help" : help(out);
+                    case "help" : help(out);break;
                     case "register" : register(words[1], words[2], words[3], out);break;
                     case "login" : login(words[1], words[2], out);break;
                     case "logout" : logout(out);break;
@@ -316,9 +388,9 @@ public class ClientRequestHandler implements Runnable {
                     case "withdraw-money" : withdrawMoney(Double.valueOf(words[1]), out);break;
                     case "list-offerings" : try {listOfferings(out);} catch (CryptoHttpClientException e) {out.print("An error occurred while fetching the data"); out.flush();} break;
                     case "buy" : try {buy(Double.valueOf(words[2]), words[1], out);} catch (CryptoHttpClientException e) {out.print("An error occurred while fetching the data"); out.flush();}break;
-                    case "sell" : System.out.println("sell");break;
-                    case "get-wallet-summary" : System.out.println("get-wallet-summary");break;
-                    case "get-wallet-overall-summary" : System.out.println("get-wallet-overall-summary");break;
+                    case "sell" : try {sell(words[1], out);} catch (CryptoHttpClientException e) {out.print("An error occurred while fetching the data"); out.flush();};break;
+                    case "get-wallet-summary" : System.out.println("get-wallet-summary"); break;
+                    case "get-wallet-overall-summary" : System.out.println("get-wallet-overall-summary"); break;
                     default : out.println("Unknown command. Type 'help' to see available commands."); out.flush(); break;
                 }
             }

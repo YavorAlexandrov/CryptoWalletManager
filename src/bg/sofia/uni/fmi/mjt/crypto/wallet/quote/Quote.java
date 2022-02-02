@@ -11,4 +11,11 @@ public class Quote {
         this.asset = asset;
     }
 
+    public double getAmount() {
+        return amount;
+    }
+
+    public Asset getAsset() {
+        return asset;
+    }
 }
