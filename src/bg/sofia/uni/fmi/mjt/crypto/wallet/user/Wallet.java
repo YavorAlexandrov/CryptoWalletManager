@@ -2,6 +2,7 @@ package bg.sofia.uni.fmi.mjt.crypto.wallet.user;
 
 import bg.sofia.uni.fmi.mjt.crypto.wallet.dto.Asset;
 import bg.sofia.uni.fmi.mjt.crypto.wallet.exceptions.InsufficientFundsException;
+import bg.sofia.uni.fmi.mjt.crypto.wallet.quote.Quote;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -10,12 +11,12 @@ import java.util.Set;
 
 public class Wallet {
     private double currentMoneyAmount;
-    private Set<Asset> assets;
+    private Set<Quote> quotes;
     private double walletSummary;
 
     public Wallet() {
         this.currentMoneyAmount = 0;
-        this.assets = new HashSet<>();
+        this.quotes = new HashSet<>();
         this.walletSummary = 0;
     }
 
@@ -27,6 +28,10 @@ public class Wallet {
         currentMoneyAmount += amount;
     }
 
+    public double getCurrentMoneyAmount() {
+        return currentMoneyAmount;
+    }
+
     public void withdraw(double amount) throws InsufficientFundsException {
         if (amount < 0) {
             throw new IllegalArgumentException("Withdraw should be a positive number");
@@ -36,15 +41,15 @@ public class Wallet {
             throw new InsufficientFundsException("Not enough money in wallet to withdraw " + amount);
         }
 
-        currentMoneyAmount += amount;
+        currentMoneyAmount -= amount;
     }
 
-    public void addAsset(Asset asset) {
-        assets.add(asset);
+    public void addQuote(Quote quote) {
+        quotes.add(quote);
     }
 
-    public Collection<Asset> getAssets() {
-        return Collections.unmodifiableCollection(assets);
+    public Collection<Quote> getQuotes() {
+        return Collections.unmodifiableCollection(quotes);
     }
 
     public double getWalletSummary() {
@@ -56,7 +61,7 @@ public class Wallet {
     public String toString() {
         return "Wallet{" +
                 "currentMoneyAmount=" + currentMoneyAmount +
-                ", assets=" + assets +
+                ", quotes=" + quotes +
                 ", walletSummary=" + walletSummary +
                 '}';
     }

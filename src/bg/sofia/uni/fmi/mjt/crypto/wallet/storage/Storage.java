@@ -5,6 +5,7 @@ import bg.sofia.uni.fmi.mjt.crypto.wallet.user.User;
 
 import java.io.Reader;
 import java.io.Writer;
+import java.util.Collection;
 
 public interface Storage {
 
@@ -13,5 +14,7 @@ public interface Storage {
     void loadStorage(Reader reader);
 
     void saveStorage(Writer writer);
+
+    Collection<User> getUsers();
 
 }
