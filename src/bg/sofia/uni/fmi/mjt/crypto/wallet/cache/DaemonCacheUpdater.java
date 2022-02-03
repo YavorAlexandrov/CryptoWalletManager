@@ -70,6 +70,7 @@ public class DaemonCacheUpdater extends Thread {
             Set<Asset> assets = GSON.fromJson(response.body(), type);
             assets = assets.stream()
                     .filter(asset -> asset.getIsCrypto() == 1)
+                    .filter(asset -> asset.getPrice() != null)
                     .limit(MAX_RESULTS_AMOUNT).collect(Collectors.toSet());
 
             synchronized (cache) {

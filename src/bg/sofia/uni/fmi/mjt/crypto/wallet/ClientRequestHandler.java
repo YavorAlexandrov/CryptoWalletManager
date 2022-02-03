@@ -18,13 +18,12 @@ import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -79,7 +78,7 @@ public class ClientRequestHandler implements Runnable {
 
         try {
             Wallet wallet = new Wallet();
-            synchronized (this) {
+            synchronized (storage) {
                 storage.addUser(new User(name, email, password, wallet));
             }
 
@@ -199,6 +198,7 @@ public class ClientRequestHandler implements Runnable {
 
             assets.stream()
                     .filter(asset -> asset.getIsCrypto() == 1)
+                    .filter(asset -> asset.getPrice() != null)
                     .limit(MAX_RESULTS_AMOUNT)
                     .forEach(asset -> writer.print(asset.formattedToString()));
             writer.println("");
@@ -253,7 +253,7 @@ public class ClientRequestHandler implements Runnable {
     }
 
     private void buyWithRequest(double money, String assetID, PrintWriter writer) throws CryptoHttpClientException {
-        HttpResponse<String> response = null;
+        HttpResponse<String> response;
 
         try {
             URI uri = new URI(API_ENDPOINT_SCHEME,
@@ -268,9 +268,10 @@ public class ClientRequestHandler implements Runnable {
         }
 
         if (response.statusCode() == HttpURLConnection.HTTP_OK) {
-            Asset asset = GSON.fromJson(response.body().toString(), Asset.class);
+            Type type = new TypeToken<List<Asset>>(){}.getType();
+            List<Asset> assets = GSON.fromJson(response.body(), type);
 
-            buyAsset(money, asset, writer);
+            buyAsset(money, assets.get(0), writer);
             return;
         }
 
@@ -337,9 +338,10 @@ public class ClientRequestHandler implements Runnable {
         }
 
         if (response.statusCode() == HttpURLConnection.HTTP_OK) {
-            Asset asset = GSON.fromJson(response.body().toString(), Asset.class);
+            Type type = new TypeToken<List<Asset>>(){}.getType();
+            List<Asset> assets = GSON.fromJson(response.body(), type);
 
-            sellAssets(assetID, asset, writer);
+            sellAssets(assetID, assets.get(0), writer);
             return;
         }
 
@@ -365,9 +367,85 @@ public class ClientRequestHandler implements Runnable {
         }
 
         sellWithRequest(assetID, writer);
+    }
+    private double checkWithRequest(String assetID, Quote quote) throws CryptoHttpClientException {
+        HttpResponse<String> response = null;
 
+        try {
+            URI uri = new URI(API_ENDPOINT_SCHEME,
+                    API_ENDPOINT_HOST,
+                    API_ENDPOINT_PATH + API_ENDPOINT_ASSET_ID_PATH.formatted(assetID),
+                    API_ENDPOINT_QUERY.formatted(API_KEY), null);
+            HttpRequest request = HttpRequest.newBuilder().uri(uri).build();
+
+            response = cryptoHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            throw new CryptoHttpClientException("a problem occurred while retrieving the data", e);
+        }
+
+        if (response.statusCode() == HttpURLConnection.HTTP_OK) {
+            Type type = new TypeToken<List<Asset>>(){}.getType();
+            List<Asset> assets = GSON.fromJson(response.body(), type);
+
+            return quote.getAmount() * assets.get(0).getPrice().doubleValue();
+        }
+
+        //TODO api errors
+
+        throw new CryptoHttpClientException("Unexpected response code from the crypto service");
     }
 
+    private double checkValueOfAsset(String assetID, Quote quote) {
+        Asset cachedAsset = checkCache(assetID);
+        if (cachedAsset != null) {
+            return quote.getAmount() * cachedAsset.getPrice().doubleValue();
+        }
+
+        double res = -1;
+        try {
+            res = checkWithRequest(assetID, quote);
+        } catch (CryptoHttpClientException e) {
+            //TODO ?
+        }
+
+        return res;
+    }
+
+    private void getSummary(PrintWriter writer) {
+        if (!isLogged) {
+            writer.println("No account logged in currently.");
+            writer.flush();
+            return;
+        }
+
+        writer.print("Money to invest: " + activeUser.getWallet().getCurrentMoneyAmount() + " ; ");
+        activeUser.getWallet().getQuotes()
+                .stream()
+                .forEach(quote -> writer.print("Value of " + quote.getAsset().getAssetId() + ": "
+                                            + checkValueOfAsset(quote.getAsset().getAssetId(), quote) + " ; "));
+
+        writer.println("");
+        writer.flush();
+    }
+
+    private double overallSummary(PrintWriter writer) {
+        if (!isLogged) {
+            writer.println("No account logged in currently.");
+            writer.flush();
+            return -1;
+        }
+
+        double currVal = 0;
+        double boughtVal = 0;
+        for(Quote quote : activeUser.getWallet().getQuotes()) {
+            currVal += checkValueOfAsset(quote.getAsset().getAssetId(), quote);
+            boughtVal += quote.getAmount() * quote.getAsset().getPrice().doubleValue();
+        }
+        double overall = currVal - boughtVal;
+        writer.println("Overall account balance: " + overall);
+        writer.flush();
+        return overall;
+    }
 
     @Override
     public void run() {
@@ -381,6 +459,7 @@ public class ClientRequestHandler implements Runnable {
                 String[] words = inputLine.split(" ");
                 switch (words[0]) {
                     case "help" : help(out);break;
+                    case "quit" : out.println("Exitting..."); out.flush(); return;
                     case "register" : register(words[1], words[2], words[3], out);break;
                     case "login" : login(words[1], words[2], out);break;
                     case "logout" : logout(out);break;
@@ -389,8 +468,8 @@ public class ClientRequestHandler implements Runnable {
                     case "list-offerings" : try {listOfferings(out);} catch (CryptoHttpClientException e) {out.print("An error occurred while fetching the data"); out.flush();} break;
                     case "buy" : try {buy(Double.valueOf(words[2]), words[1], out);} catch (CryptoHttpClientException e) {out.print("An error occurred while fetching the data"); out.flush();}break;
                     case "sell" : try {sell(words[1], out);} catch (CryptoHttpClientException e) {out.print("An error occurred while fetching the data"); out.flush();};break;
-                    case "get-wallet-summary" : System.out.println("get-wallet-summary"); break;
-                    case "get-wallet-overall-summary" : System.out.println("get-wallet-overall-summary"); break;
+                    case "get-wallet-summary" : getSummary(out); break;
+                    case "get-wallet-overall-summary" : overallSummary(out); break;
                     default : out.println("Unknown command. Type 'help' to see available commands."); out.flush(); break;
                 }
             }

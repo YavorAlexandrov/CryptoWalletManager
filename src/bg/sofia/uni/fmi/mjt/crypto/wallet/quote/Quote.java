@@ -18,4 +18,12 @@ public class Quote {
     public Asset getAsset() {
         return asset;
     }
+
+    @Override
+    public String toString() {
+        return "Quote{" +
+                "amount=" + amount +
+                ", asset=" + asset +
+                '}';
+    }
 }

@@ -56,10 +56,9 @@ public class UsersStorage implements Storage {
     @Override
     public void loadStorage(Reader reader) {
             var bufferedReader = new BufferedReader(reader);
-            String data = "[";
+            String data = "";
 
             data += bufferedReader.lines().collect(Collectors.joining(","));
-            data += "]";
 
             Type type = new TypeToken<Set<User>>(){}.getType();
             users = GSON.fromJson(data, type);
