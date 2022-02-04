@@ -3,9 +3,9 @@ package bg.sofia.uni.fmi.mjt.crypto.wallet.user;
 import com.google.gson.*;
 
 import java.lang.reflect.Type;
-import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
 public class User {
     private String name;
@@ -15,20 +15,21 @@ public class User {
 
     private static final Gson GSON = new GsonBuilder()
             .registerTypeAdapter(LocalDateTime.class, new JsonSerializer<LocalDateTime>() {
-        private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+                private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
-        @Override
+                @Override
         public JsonElement serialize(LocalDateTime localDateTime, Type srcType, JsonSerializationContext context) {
-            return new JsonPrimitive(formatter.format(localDateTime));
-        }
-    })
-            .registerTypeAdapter(LocalDateTime.class, new JsonDeserializer <LocalDateTime>() {
-        @Override
-        public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            return LocalDateTime.parse(json.getAsString(),
+                    return new JsonPrimitive(TIME_FORMATTER.format(localDateTime));
+                }
+            })
+            .registerTypeAdapter(LocalDateTime.class, new JsonDeserializer<LocalDateTime>() {
+                @Override
+        public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+                        throws JsonParseException {
+                    return LocalDateTime.parse(json.getAsString(),
                     DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"));
-        }
-    }).create();
+                }
+            }).create();
 
     public User(String name, String email, String password, Wallet wallet) {
         this.name = name;
@@ -62,6 +63,22 @@ public class User {
 
     public String getName() {
         return name;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return Objects.equals(name, user.name) &&
+                Objects.equals(email, user.email) &&
+                Objects.equals(password, user.password) &&
+                wallet.equals(user.wallet);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, email, password, wallet);
     }
 
     public String getPassword() {

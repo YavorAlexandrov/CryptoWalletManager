@@ -19,16 +19,18 @@ import java.util.stream.Collectors;
 public class UsersStorage implements Storage {
     private static final Gson GSON = new GsonBuilder()
             .registerTypeAdapter(LocalDateTime.class, new JsonSerializer<LocalDateTime>() {
-                private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+                private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
                 @Override
-                public JsonElement serialize(LocalDateTime localDateTime, Type srcType, JsonSerializationContext context) {
-                    return new JsonPrimitive(formatter.format(localDateTime));
+                public JsonElement serialize(LocalDateTime localDateTime, Type srcType,
+                                             JsonSerializationContext context) {
+                    return new JsonPrimitive(TIME_FORMATTER.format(localDateTime));
                 }
             })
-            .registerTypeAdapter(LocalDateTime.class, new JsonDeserializer <LocalDateTime>() {
+            .registerTypeAdapter(LocalDateTime.class, new JsonDeserializer<LocalDateTime>() {
                 @Override
-                public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+                public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+                        throws JsonParseException {
                     return LocalDateTime.parse(json.getAsString(),
                             DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"));
                 }
@@ -55,13 +57,12 @@ public class UsersStorage implements Storage {
 
     @Override
     public void loadStorage(Reader reader) {
-            var bufferedReader = new BufferedReader(reader);
-            String data = "";
+        var bufferedReader = new BufferedReader(reader);
+        String data = "";
 
-            data += bufferedReader.lines().collect(Collectors.joining(","));
-
-            Type type = new TypeToken<Set<User>>(){}.getType();
-            users = GSON.fromJson(data, type);
+        data += bufferedReader.lines().collect(Collectors.joining(","));
+        Type type = new TypeToken<Set<User>>() { }.getType();
+        users = GSON.fromJson(data, type);
     }
 
     @Override

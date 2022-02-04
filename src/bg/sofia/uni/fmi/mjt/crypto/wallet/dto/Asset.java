@@ -4,6 +4,7 @@ import com.google.gson.annotations.SerializedName;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 public class Asset {
 
@@ -38,10 +39,6 @@ public class Asset {
         return assetId;
     }
 
-    public String getName() {
-        return name;
-    }
-
     public BigDecimal getPrice() {
         return price;
     }
@@ -59,14 +56,28 @@ public class Asset {
     }
 
     public String formattedToString() {
-        return "{Asset ID: " + assetId + " ; name: " + name + " ; price: " + price + "} > ";
+        return "{Asset ID: " + assetId + " ; name: " + name + " ; price: " + price + "} ! ";
     }
 
     public void setPurchaseDate(LocalDateTime purchaseDate) {
         this.purchaseDate = purchaseDate;
     }
 
-    public void setSoldDate(LocalDateTime soldDate) {
-        this.soldDate = soldDate;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Asset asset = (Asset) o;
+        return isCrypto == asset.isCrypto &&
+                Objects.equals(assetId, asset.assetId) &&
+                Objects.equals(name, asset.name) &&
+                Objects.equals(price, asset.price) &&
+                Objects.equals(purchaseDate, asset.purchaseDate) &&
+                Objects.equals(soldDate, asset.soldDate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(assetId, name, isCrypto, price, purchaseDate, soldDate);
     }
 }

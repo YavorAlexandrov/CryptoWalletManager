@@ -4,10 +4,7 @@ import bg.sofia.uni.fmi.mjt.crypto.wallet.dto.Asset;
 import bg.sofia.uni.fmi.mjt.crypto.wallet.exceptions.InsufficientFundsException;
 import bg.sofia.uni.fmi.mjt.crypto.wallet.quote.Quote;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class Wallet {
     private double currentMoneyAmount;
@@ -56,9 +53,6 @@ public class Wallet {
         return Collections.unmodifiableCollection(quotes);
     }
 
-    public double getWalletSummary() {
-        return walletSummary;
-    }
 
 
     @Override
@@ -68,5 +62,20 @@ public class Wallet {
                 ", quotes=" + quotes +
                 ", walletSummary=" + walletSummary +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Wallet wallet = (Wallet) o;
+        return Double.compare(wallet.currentMoneyAmount, currentMoneyAmount) == 0 &&
+                Double.compare(wallet.walletSummary, walletSummary) == 0 &&
+                Objects.equals(quotes, wallet.quotes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(currentMoneyAmount, quotes, walletSummary);
     }
 }

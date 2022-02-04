@@ -21,6 +21,7 @@ public class ServerStopper extends Thread {
             if ("STOP_SERVER".equals(message)) {
                 synchronized (new Object()) {
                     stopped = true;
+                    System.out.println("Server will be stopped soon.");
                     break;
                 }
             }

@@ -10,7 +10,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.time.LocalDateTime;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,7 +34,6 @@ public class CryptoWalletServer {
         Scanner scanner = new Scanner(System.in);
         ServerStopper stopServer = new ServerStopper(stopped, scanner);
         stopServer.start();
-
         try {
             usersStorage.loadStorage(new BufferedReader(new FileReader(FILE_NAME)));
         } catch (IOException e) {
@@ -50,7 +48,7 @@ public class CryptoWalletServer {
 
             Socket clientSocket;
 
-            while(!stopServer.getStopped()) {
+            while (!stopServer.getStopped()) {
 
                 clientSocket = serverSocket.accept();
 
