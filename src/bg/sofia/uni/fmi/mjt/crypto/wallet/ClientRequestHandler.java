@@ -123,7 +123,7 @@ public class ClientRequestHandler implements Runnable {
         } else {
             writer.println("Invalid email. Login unsuccessful.");
             writer.flush();
-            //TO DO sout no such user
+            //TO DO log no such error
             return false;
         }
 
@@ -166,8 +166,9 @@ public class ClientRequestHandler implements Runnable {
     private void help(PrintWriter writer) {
         if (!isLogged) {
             writer.print("Available commands: ; ");
-            writer.print("-register <name> <email> <password> ; ");
-            writer.println("-login <email> <password> ; ");
+            writer.print("- quit ; ");
+            writer.print("- register <name> <email> <password> ; ");
+            writer.println("- login <email> <password> ; ");
         } else {
             writer.print("Available commands: ; ");
             writer.print("- deposit-money <amount> ; ");
@@ -177,6 +178,7 @@ public class ClientRequestHandler implements Runnable {
             writer.print("- sell <asset_id> ; ");
             writer.print("- get-wallet-summary ; ");
             writer.print("- get-wallet-overall-summary ; ");
+            writer.print("- quit ; ");
             writer.println("- logout");
         }
     }
@@ -276,6 +278,11 @@ public class ClientRequestHandler implements Runnable {
             Type type = new TypeToken<List<Asset>>() { }.getType();
             List<Asset> assets = GSON.fromJson(response.body(), type);
 
+            if (assets.isEmpty() || assets.get(0).getPrice() == null) {
+                writer.println("This coin wasn't found or isn't available for purchase.");
+                return;
+            }
+
             buyAsset(money, assets.get(0), writer);
             return;
         }
@@ -347,6 +354,11 @@ public class ClientRequestHandler implements Runnable {
         if (response.statusCode() == HttpURLConnection.HTTP_OK) {
             Type type = new TypeToken<List<Asset>>() { }.getType();
             List<Asset> assets = GSON.fromJson(response.body(), type);
+
+            if (assets.isEmpty() || assets.get(0).getPrice() == null) {
+                writer.println("This coin wasn't found or can't be sold right now.");
+                return;
+            }
 
             sellAssets(assetID, assets.get(0), writer);
             return;

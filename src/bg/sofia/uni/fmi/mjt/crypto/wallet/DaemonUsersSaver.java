@@ -21,8 +21,7 @@ public class DaemonUsersSaver extends Thread {
     @Override
     public void run() {
         try (var writer = new BufferedWriter(new FileWriter(fileName))) {
-            File myObj = new File(fileName);
-            myObj.createNewFile();
+
             usersStorage.saveStorage(writer);
 
         } catch (IOException e) {

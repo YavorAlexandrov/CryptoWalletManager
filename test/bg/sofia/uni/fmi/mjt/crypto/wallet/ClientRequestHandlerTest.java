@@ -141,7 +141,7 @@ public class ClientRequestHandlerTest {
             Mockito.when(socket.getInputStream()).thenReturn(stream);
 
             executor.execute(requestHandler);
-            Thread.sleep(1000);
+            Thread.sleep(1500);
 
            Assertions.assertFalse(requestHandler.getActiveUser().getWallet().getQuotes().isEmpty(), "The user should have quotes after buying");
         } catch (IOException e) {
@@ -164,7 +164,7 @@ public class ClientRequestHandlerTest {
             Mockito.when(socket.getInputStream()).thenReturn(stream);
 
             executor.execute(requestHandler);
-            Thread.sleep(1000);
+            Thread.sleep(1500);
 
             Assertions.assertTrue(requestHandler.getActiveUser().getWallet().getQuotes().isEmpty(), "The user shouldn't have quotes after selling");
 
@@ -230,25 +230,4 @@ public class ClientRequestHandlerTest {
     }
 
 
-    @Disabled
-    @Test
-    public void testUnknownCommand() throws InterruptedException {
-        try (PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-
-            String string = "unknown command";
-            InputStream stream = new ByteArrayInputStream(string.getBytes
-                    (Charset.forName("UTF-8")));
-
-            Mockito.when(socket.getInputStream()).thenReturn(stream);
-
-            executor.execute(requestHandler);
-            Thread.sleep(1000);
-
-            ;
-
-        } catch (IOException e) {
-            Assertions.fail("a reading/writing problem occurred");
-        }
-    }
 }

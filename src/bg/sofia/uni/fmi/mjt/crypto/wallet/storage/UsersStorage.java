@@ -63,6 +63,9 @@ public class UsersStorage implements Storage {
         data += bufferedReader.lines().collect(Collectors.joining(","));
         Type type = new TypeToken<Set<User>>() { }.getType();
         users = GSON.fromJson(data, type);
+        if (users == null) {
+            users = new HashSet<>();
+        }
     }
 
     @Override

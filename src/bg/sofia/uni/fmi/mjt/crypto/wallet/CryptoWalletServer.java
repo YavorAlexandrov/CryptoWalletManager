@@ -6,6 +6,7 @@ import bg.sofia.uni.fmi.mjt.crypto.wallet.storage.UsersStorage;
 
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -35,6 +36,8 @@ public class CryptoWalletServer {
         ServerStopper stopServer = new ServerStopper(stopped, scanner);
         stopServer.start();
         try {
+            File myObj = new File(FILE_NAME);
+            myObj.createNewFile();
             usersStorage.loadStorage(new BufferedReader(new FileReader(FILE_NAME)));
         } catch (IOException e) {
             throw new IllegalStateException("a problem occurred while loading the users", e);
